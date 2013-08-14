@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>OAuth V2.0 Client Application</title>
+<script type="text/javascript" src="/RestClient2/js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript">
+ var accessToken; 
+ 
+ function startOAuth () {
+	 var clientId = 'test2';
+//	 var authorizationUrlBase = 'https://localhost.outageanalyzer.com:7443/openam2/oauth2/authorize';
+	 var authorizationUrlBase = 'https://ec2-54-226-44-149.compute-1.amazonaws.com:8443/openam/oauth2/authorize';
+	 var redirectUri = 'https://localhost:9443/RestClient2/test.html';
+	 var url = authorizationUrlBase;
+	 url += '?response_type=token'
+		 +  '&scope=read'	 
+		 +  '&redirect_uri=' + encodeURIComponent(redirectUri)
+		 +  '&client_id=' + encodeURIComponent(clientId);
+	 console.log(url);
+	 location.href = url;
+ }
+ 
+ function getAccessTokenFromFragment () {
+		var params = {}, 
+		    queryString = location.hash.substring(1),
+	        regex = /([^&=]+)=([^&]*)/g,
+	        m;
+	    while (m = regex.exec(queryString)) {
+	       params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+	    }
+        return params['access_token'];     
+ }
+
+ function initiateRestCall () {
+	    if (accessToken !== undefined) {
+	    	console.dir(accessToken);
+	    	$.ajax({
+	            url: 'https://localhost:9443/RestServer/api/get_data',
+	            type: 'GET',
+	            dataType: 'json',
+	            success: function(data) { 
+	  				  $('<pre/>', {
+						  'class': 'json-div',
+						  html: JSON.stringify(data, null, '\t')
+					  }).appendTo('body');
+	            },
+	            error: function(data) { 
+	            	$('<pre/>', {
+						  'class': 'json-div',
+						  html: "An error occurred which prevented your request from being fulfilled."
+					  }).appendTo('body');
+	            },
+	            beforeSend: function (xhr) {
+	            	xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+	            }
+	          });
+	    }
+ }
+ 
+ accessToken = getAccessTokenFromFragment();
+ if (accessToken === undefined) {
+	 startOAuth();
+ }
+
+ 
+ $(document).ready(function(){
+	 initiateRestCall();
+ });
+</script>
+<style type="text/css">
+    .json-div {
+        background-color: #CCCCCC;
+        padding: 20px;
+    }
+</style>
+</head>
+<body>
+<h1>Sample OAuth V2.0 Client Application</h1>
+</body>
+</html>
